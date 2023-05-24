@@ -3,3 +3,18 @@ si "hællæ vercden!".
 
 la arbeider være 45.
 si arbeider.
+
+dersom arbeider er lik 45 gjør følgende: 
+    si "Arbeider".
+
+dersom arbeider er større enn 45 gjør følgende: 
+    si "Arbeider".
+
+dersom arbeider er større enn eller lik 45 gjør følgende: 
+    si "Arbeider".
+
+dersom arbeider er mindre enn 45 gjør følgende: 
+    si "Arbeider".
+
+dersom arbeider er mindre enn eller lik 45 gjør følgende: 
+    si "Arbeider".

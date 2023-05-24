@@ -14,6 +14,8 @@ pub enum NodeType {
     PrintStatement,
     AssignmentStatement,
     Expression,
+    IfStatement,
+    Condition,
 }
 
 #[derive(Debug, Clone)]
@@ -21,9 +23,19 @@ pub struct Node {
     pub token: Option<Token>,
     pub children: Vec<Box<Node>>,
     pub node_type: NodeType,
+    pub data: String,
 }
 
 impl Node {
+    pub fn new(node_type: NodeType) -> Self {
+        Self {
+            token: None,
+            children: Vec::new(),
+            node_type,
+            data: String::new(),
+        }
+    }
+
     pub fn print(&self) {
         self.print_aux(0);
     }
@@ -92,6 +104,8 @@ fn simplify_tree_aux(ast: &mut Box<Node>) {
             }
         }
         NodeType::AssignmentStatement => {}
+        NodeType::IfStatement => {}
+        NodeType::Condition => {}
     }
 }
 
@@ -128,10 +142,27 @@ pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
                         token.line(),
                         token.column(),
                     ));
+                    return;
                 }
                 _ => {}
             }
         }
+    }
+
+    match ast.token.clone() {
+        Some(token) => match token.token_type() {
+            crate::lexer::TokenType::Identifier(name) => {
+                let symbol = symbol_table.get(name);
+                ast.token = Some(Token::new(
+                    crate::lexer::TokenType::SymbolRef(symbol),
+                    token.line(),
+                    token.column(),
+                ));
+                return;
+            }
+            _ => {}
+        },
+        None => {}
     }
 
     for child in &mut ast.children {
@@ -160,6 +191,19 @@ fn ast_to_graphwiz_aux(state: &mut AstWriterState, ast: &Node) -> Result<(), Box
     state
         .file
         .write_all(format!("    {} [label=\"{}\"];\n", id, label).as_bytes())?;
+    if ast.data.len() > 0 {
+        let data_id = state.id;
+        state.id += 1;
+        let mut data_label = ast.data.clone();
+        data_label = data_label.replace("\"", "\\\"");
+        state
+            .file
+            .write_all(format!("    {} [label=\"{}\"];\n", data_id, data_label).as_bytes())?;
+        // arrow with data label
+        state
+            .file
+            .write_all(format!("    {} -> {} [label=\"data\"];\n", id, data_id).as_bytes())?;
+    }
     if let Some(token) = &ast.token {
         let token_id = state.id;
         state.id += 1;

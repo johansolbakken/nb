@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Iter};
+use std::collections::HashMap;
 
 use tracing::info;
 
@@ -9,6 +9,17 @@ pub enum TokenType {
     Si,
     La,
     Være,
+    Er,
+    Lik,
+    Mindre,
+    Større,
+    Enn,
+    Eller,
+    Og,
+    Dersom,
+    Gjør,
+    Følgende,
+    Colon,
     StringLiteral(String),
     StringListIndex(usize),
     SymbolRef(Box<Symbol>),
@@ -77,6 +88,11 @@ impl Lexer {
             return Token::new(TokenType::Dot, self.line, self.column);
         }
 
+        if self.peek() == ':' {
+            self.advance();
+            return Token::new(TokenType::Colon, self.line, self.column);
+        }
+
         if self.peek() == '\"' {
             self.advance();
             let start = self.position;
@@ -122,6 +138,16 @@ impl Lexer {
             ("si", TokenType::Si),
             ("la", TokenType::La),
             ("være", TokenType::Være),
+            ("er", TokenType::Er),
+            ("lik", TokenType::Lik),
+            ("mindre", TokenType::Mindre),
+            ("større", TokenType::Større),
+            ("enn", TokenType::Enn),
+            ("eller", TokenType::Eller),
+            ("og", TokenType::Og),
+            ("dersom", TokenType::Dersom),
+            ("gjør", TokenType::Gjør),
+            ("følgende", TokenType::Følgende),
         ]
         .iter()
         .cloned()
