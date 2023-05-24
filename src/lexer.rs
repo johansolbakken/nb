@@ -1,8 +1,11 @@
-#[derive(Debug)]
+use tracing::info;
+
+#[derive(Debug, PartialEq)]
 pub enum TokenType {
     Si,
     StringLiteral(String),
     Identifier(String),
+    Dot,
     EOF,
 }
 
@@ -55,6 +58,15 @@ impl Lexer {
     pub fn lex(&mut self) -> Token {
         self.skip_whitespace();
 
+        if self.peek() == '\0' {
+            return Token::new(TokenType::EOF, self.line, self.column);
+        }
+
+        if self.peek() == '.' {
+            self.advance();
+            return Token::new(TokenType::Dot, self.line, self.column);
+        }
+
         if self.peek() == '\"' {
             self.advance();
             let start = self.position;
@@ -93,7 +105,7 @@ impl Lexer {
     }
 
     fn peek(&self) -> char {
-        self.input[self.position..].chars().next().unwrap()
+        self.input.chars().nth(self.position).unwrap_or('\0')
     }
 
     fn advance(&mut self) -> char {
