@@ -12,5 +12,6 @@ la arbeider være 45.
 si arbeider.
 
 dersom arbeider er lik 45 gjør følgende:
-    si "Arbeider".
+    si "Arbeider",
+    gjør sum med 1, 2 og "hei"!.
 ```

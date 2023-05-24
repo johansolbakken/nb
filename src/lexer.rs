@@ -15,11 +15,13 @@ pub enum TokenType {
     Større,
     Enn,
     Eller,
+    Ellers,
     Og,
     Dersom,
     Gjør,
     Følgende,
     Colon,
+    SemiColon,
     StringLiteral(String),
     StringListIndex(usize),
     SymbolRef(Box<Symbol>),
@@ -93,6 +95,11 @@ impl Lexer {
             return Token::new(TokenType::Colon, self.line, self.column);
         }
 
+        if self.peek() == ';' {
+            self.advance();
+            return Token::new(TokenType::SemiColon, self.line, self.column);
+        }
+
         if self.peek() == '\"' {
             self.advance();
             let start = self.position;
@@ -143,8 +150,9 @@ impl Lexer {
             ("mindre", TokenType::Mindre),
             ("større", TokenType::Større),
             ("enn", TokenType::Enn),
-            ("eller", TokenType::Eller),
+            ("ellers", TokenType::Ellers),
             ("og", TokenType::Og),
+            ("eller", TokenType::Eller),
             ("dersom", TokenType::Dersom),
             ("gjør", TokenType::Gjør),
             ("følgende", TokenType::Følgende),

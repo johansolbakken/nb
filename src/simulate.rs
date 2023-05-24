@@ -81,6 +81,11 @@ fn simulate_statement(
                     let right = evaluate(&condition.children[1], &state);
                     if left == right {
                         simulate_statement(body, symbol_table, string_list, state);
+                    } else {
+                        if statement.children.len() == 3 {
+                            let else_body = &statement.children[2];
+                            simulate_statement(else_body, symbol_table, string_list, state);
+                        }
                     }
                 }
                 "!=" => {
@@ -88,6 +93,11 @@ fn simulate_statement(
                     let right = evaluate(&condition.children[1], &state);
                     if left != right {
                         simulate_statement(body, symbol_table, string_list, state);
+                    } else {
+                        if statement.children.len() == 3 {
+                            let else_body = &statement.children[2];
+                            simulate_statement(else_body, symbol_table, string_list, state);
+                        }
                     }
                 }
                 "<" => {
@@ -95,6 +105,11 @@ fn simulate_statement(
                     let right = evaluate(&condition.children[1], &state);
                     if left < right {
                         simulate_statement(body, symbol_table, string_list, state);
+                    } else {
+                        if statement.children.len() == 3 {
+                            let else_body = &statement.children[2];
+                            simulate_statement(else_body, symbol_table, string_list, state);
+                        }
                     }
                 }
                 "<=" => {
@@ -102,6 +117,11 @@ fn simulate_statement(
                     let right = evaluate(&condition.children[1], &state);
                     if left <= right {
                         simulate_statement(body, symbol_table, string_list, state);
+                    } else {
+                        if statement.children.len() == 3 {
+                            let else_body = &statement.children[2];
+                            simulate_statement(else_body, symbol_table, string_list, state);
+                        }
                     }
                 }
                 ">" => {
@@ -109,6 +129,11 @@ fn simulate_statement(
                     let right = evaluate(&condition.children[1], &state);
                     if left > right {
                         simulate_statement(body, symbol_table, string_list, state);
+                    } else {
+                        if statement.children.len() == 3 {
+                            let else_body = &statement.children[2];
+                            simulate_statement(else_body, symbol_table, string_list, state);
+                        }
                     }
                 }
                 ">=" => {
@@ -116,6 +141,11 @@ fn simulate_statement(
                     let right = evaluate(&condition.children[1], &state);
                     if left >= right {
                         simulate_statement(body, symbol_table, string_list, state);
+                    } else {
+                        if statement.children.len() == 3 {
+                            let else_body = &statement.children[2];
+                            simulate_statement(else_body, symbol_table, string_list, state);
+                        }
                     }
                 }
                 _ => {}

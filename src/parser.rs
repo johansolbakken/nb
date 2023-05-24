@@ -105,6 +105,14 @@ impl Parser {
         self.expect(crate::lexer::TokenType::Følgende);
         self.expect(crate::lexer::TokenType::Colon);
         node.children.push(self.statement());
+        self.expect(crate::lexer::TokenType::Dot);
+        if *self.token.token_type() == crate::lexer::TokenType::Ellers {
+            self.advance();
+            self.expect(crate::lexer::TokenType::Gjør);
+            self.expect(crate::lexer::TokenType::Følgende);
+            self.expect(crate::lexer::TokenType::Colon);
+            node.children.push(self.statement());
+        }
         node
     }
 
