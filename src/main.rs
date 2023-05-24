@@ -1,6 +1,7 @@
 use tracing::info;
 
 mod lexer;
+mod parser;
 mod utils;
 
 fn main() {
@@ -8,10 +9,7 @@ fn main() {
 
     let source = utils::read_file("examples/si.nb").expect("Failed to read file");
     let mut lexer = lexer::Lexer::new(String::from(source));
-    let mut token = lexer.lex();
-    info!(?token);
-    while *token.token_type() != lexer::TokenType::EOF {
-        token = lexer.lex();
-        info!(?token);
-    }
+    let mut parser = parser::Parser::new(lexer);
+    let ast = parser.parse();
+    ast.print();
 }

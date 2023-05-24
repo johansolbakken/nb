@@ -1,6 +1,6 @@
 use tracing::info;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     Si,
     StringLiteral(String),
@@ -9,7 +9,7 @@ pub enum TokenType {
     EOF,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     token_type: TokenType,
     line: usize,

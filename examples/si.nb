@@ -1,1 +1,2 @@
 si "Hei verden!".
+si "Hva vil du ha?".
