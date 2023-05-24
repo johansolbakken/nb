@@ -1,11 +1,20 @@
+use std::{collections::HashMap, path::Iter};
+
 use tracing::info;
+
+use crate::symbol::Symbol;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     Si,
+    La,
+    Være,
     StringLiteral(String),
     StringListIndex(usize),
+    SymbolRef(Box<Symbol>),
     Identifier(String),
+    IntLiteral(i64),
+    FloatLiteral(f64),
     Dot,
     EOF,
 }
@@ -77,11 +86,46 @@ impl Lexer {
             let end = self.position;
             self.advance();
             return Token::new(
-                TokenType::StringLiteral(self.input[start..end].to_string()),
+                TokenType::StringLiteral(self.get(start, end)),
                 self.line,
                 self.column,
             );
         }
+
+        if self.peek().is_numeric() {
+            let start = self.position;
+            while self.peek().is_numeric() {
+                self.advance();
+            }
+            if self.peek() == '.' && self.peek_next().is_numeric() {
+                self.advance();
+                while self.peek().is_numeric() {
+                    self.advance();
+                }
+                let end = self.position;
+                return Token::new(
+                    TokenType::FloatLiteral(self.input[start..end].parse().unwrap()),
+                    self.line,
+                    self.column,
+                );
+            }
+            let end = self.position;
+            return Token::new(
+                TokenType::IntLiteral(self.get(start, end).parse().unwrap()),
+                self.line,
+                self.column,
+            );
+        }
+
+        // map string to type
+        let keywords: HashMap<&str, TokenType> = [
+            ("si", TokenType::Si),
+            ("la", TokenType::La),
+            ("være", TokenType::Være),
+        ]
+        .iter()
+        .cloned()
+        .collect();
 
         if self.peek().is_alphabetic() {
             let start = self.position;
@@ -89,9 +133,14 @@ impl Lexer {
                 self.advance();
             }
             let end = self.position;
-            let identifier = self.input[start..end].to_string();
-            if identifier == "si" {
-                return Token::new(TokenType::Si, self.line, self.column);
+            let identifier = self
+                .input
+                .chars()
+                .skip(start)
+                .take(end - start)
+                .collect::<String>();
+            if let Some(token_type) = keywords.get(&identifier[..]) {
+                return Token::new(token_type.clone(), self.line, self.column);
             }
             return Token::new(TokenType::Identifier(identifier), self.line, self.column);
         }
@@ -100,7 +149,11 @@ impl Lexer {
     }
 
     fn skip_whitespace(&mut self) {
-        while self.peek().is_whitespace() {
+        while self.peek() == ' ' || self.peek() == '\n' || self.peek() == '\t' {
+            if self.peek() == '\n' {
+                self.line += 1;
+                self.column = 1;
+            }
             self.advance();
         }
     }
@@ -109,10 +162,31 @@ impl Lexer {
         self.input.chars().nth(self.position).unwrap_or('\0')
     }
 
+    fn peek_next(&self) -> char {
+        self.input.chars().nth(self.position + 1).unwrap_or('\0')
+    }
+
     fn advance(&mut self) -> char {
         let current_char = self.peek();
         self.position += 1;
         self.column += 1;
         current_char
+    }
+
+    fn get(&self, start: usize, end: usize) -> String {
+        self.input.chars().skip(start).take(end - start).collect()
+    }
+}
+
+impl Iterator for Lexer {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let token = self.lex();
+        if token.token_type() == &TokenType::EOF {
+            None
+        } else {
+            Some(token)
+        }
     }
 }

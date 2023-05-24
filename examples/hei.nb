@@ -1,5 +1,6 @@
-la a være 5.
-hvis a er lik 5 gjør følgende:
-    si "A er 5".
-ellers gjør følgende:
-    si "A er ikke 5".
+la a være 5. 
+hvis a er lik 5 gjør følgende: 
+    si "A er 5". 
+ellers gjør følgende: 
+    si "A er ikke 5",
+    si "B er nihao".

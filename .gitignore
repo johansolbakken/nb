@@ -2,3 +2,4 @@
 grammar.rs
 ast.png
 string_list.txt
+symbol_table.txt

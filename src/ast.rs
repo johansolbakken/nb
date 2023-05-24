@@ -1,13 +1,18 @@
 use std::{error::Error, fs::File, io::Write};
 
-use crate::{lexer::Token, symbol::StringList, utils};
+use crate::{
+    lexer::Token,
+    symbol::{StringList, SymbolTable},
+    utils,
+};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum NodeType {
     Program,
     StatementList,
     Statement,
     PrintStatement,
+    AssignmentStatement,
     Expression,
 }
 
@@ -64,6 +69,16 @@ fn simplify_tree_aux(ast: &mut Box<Node>) {
             if ast.children.len() == 1 {
                 *ast = ast.children.pop().unwrap();
             }
+            if ast.children.len() == 2 {
+                if ast.children[1].node_type == NodeType::StatementList {
+                    let mut new_children = Vec::new();
+                    new_children.push(ast.children[0].clone());
+                    for child in &mut ast.children[1].children {
+                        new_children.push(child.clone());
+                    }
+                    ast.children = new_children;
+                }
+            }
         }
         NodeType::Statement => {
             if ast.children.len() == 1 {
@@ -76,6 +91,7 @@ fn simplify_tree_aux(ast: &mut Box<Node>) {
                 *ast = ast.children.pop().unwrap();
             }
         }
+        NodeType::AssignmentStatement => {}
     }
 }
 
@@ -98,6 +114,28 @@ pub fn fill_string_list(ast: &mut Box<Node>, string_list: &mut StringList) {
 
     for child in &mut ast.children {
         fill_string_list(child, string_list);
+    }
+}
+
+pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
+    if let NodeType::AssignmentStatement = ast.node_type {
+        if let Some(token) = &ast.children[0].token {
+            match token.token_type() {
+                crate::lexer::TokenType::Identifier(name) => {
+                    let symbol = symbol_table.add(name, crate::symbol::SymbolKind::Var);
+                    ast.children[0].token = Some(Token::new(
+                        crate::lexer::TokenType::SymbolRef(symbol),
+                        token.line(),
+                        token.column(),
+                    ));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    for child in &mut ast.children {
+        find_symbols(child, symbol_table);
     }
 }
 

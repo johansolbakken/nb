@@ -1,2 +1,5 @@
-si "Hei verden!".
-si "Hva vil du ha?".
+si "heu".
+si "hællæ vercden!".
+
+la arbeider være 45.
+si arbeider.

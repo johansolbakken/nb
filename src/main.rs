@@ -3,9 +3,9 @@ use tracing::info;
 mod ast;
 mod lexer;
 mod parser;
+mod simulate;
 mod symbol;
 mod utils;
-mod simulate;
 
 fn main() {
     // tracing_subscriber::fmt::init();
@@ -25,13 +25,20 @@ fn main() {
     info!("Building symbol table");
     let mut string_list = symbol::StringList::new();
     ast::fill_string_list(&mut tree, &mut string_list);
+    let mut symbol_table = symbol::SymbolTable::new();
+    ast::find_symbols(&mut tree, &mut symbol_table);
 
     tree.write_to_file("ast.png")
         .expect("Failed to write ast to file");
-    string_list.write_to_file("string_list.txt");
+    string_list
+        .write_to_file("string_list.txt")
+        .expect("Failed to write string list to file");
+    symbol_table
+        .write_to_file("symbol_table.txt")
+        .expect("Failed to write symbol table to file");
 
     info!("Simulating");
-    simulate::simulate(&tree, &string_list);
+    simulate::simulate(&tree, &symbol_table, &string_list);
 
     info!("Done!");
 }

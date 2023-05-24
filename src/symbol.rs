@@ -1,11 +1,14 @@
 use std::{collections::HashMap, error::Error, fs::File, io::Write};
 
-enum SymbolKind {
+#[derive(Debug, Clone, PartialEq)]
+pub enum SymbolKind {
     Var,
     Func,
 }
 
-enum Type {
+#[derive(Debug, Clone, PartialEq)]
+pub enum Type {
+    Unknown,
     Int,
     Float,
     String,
@@ -13,14 +16,53 @@ enum Type {
     Void,
 }
 
-struct Symbol {
-    name: String,
-    kind: SymbolKind,
-    type_: Type,
+#[derive(Debug, Clone, PartialEq)]
+pub struct Symbol {
+    pub name: String,
+    pub kind: SymbolKind,
+    pub type_: Type,
 }
 
-struct SymbolTable {
-    symbols: HashMap<String, Symbol>,
+pub struct SymbolTable {
+    symbols: HashMap<String, Box<Symbol>>,
+}
+
+impl SymbolTable {
+    pub fn new() -> Self {
+        Self {
+            symbols: HashMap::new(),
+        }
+    }
+
+    pub fn add(&mut self, name: &str, kind: SymbolKind) -> Box<Symbol> {
+        if self.symbols.contains_key(name) {
+            return self.get(&name.to_string());
+        }
+        let symbol = Symbol {
+            name: name.to_string(),
+            kind,
+            type_: Type::Unknown,
+        };
+        self.symbols.insert(name.to_string(), Box::new(symbol));
+        self.symbols.get(name).unwrap().clone()
+    }
+
+    pub fn get(&self, identifier: &String) -> Box<Symbol> {
+        self.symbols.get(identifier).unwrap().clone()
+    }
+
+    pub fn write_to_file(&self, filename: &str) -> Result<(), Box<dyn Error>> {
+        let mut file = File::create(filename)?;
+        writeln!(file, "Symbol_table\n------------")?;
+        for symbol in self.symbols.values() {
+            writeln!(
+                file,
+                "name = {}, kind = {:?}, type = {:?}",
+                symbol.name, symbol.kind, symbol.type_
+            )?;
+        }
+        Ok(())
+    }
 }
 
 pub struct StringList {
