@@ -1,10 +1,21 @@
 si "heu".
 si "hællæ vercden!".
 
-la arbeider være 42.
+la arbeider være 45.
 si arbeider.
 
 dersom arbeider er lik 45 gjør følgende: 
-    si "Arbeider".
+    si "Arbeider",
+    la arbeider være 43.
 ellers gjør følgende: 
-    si "ikke arbeider".
+    si "ikke arbeider",
+    si "hei".
+.
+
+
+dersom arbeider er mindre enn 45 gjør følgende:
+    si "Arbeider endret seg!",
+    dersom arbeider er lik 43 gjør følgende:
+        si "Arbeider ble faktisk 43".
+    .
+.

@@ -22,6 +22,7 @@ pub enum TokenType {
     Følgende,
     Colon,
     SemiColon,
+    Comma,
     StringLiteral(String),
     StringListIndex(usize),
     SymbolRef(Box<Symbol>),
@@ -98,6 +99,11 @@ impl Lexer {
         if self.peek() == ';' {
             self.advance();
             return Token::new(TokenType::SemiColon, self.line, self.column);
+        }
+
+        if self.peek() == ',' {
+            self.advance();
+            return Token::new(TokenType::Comma, self.line, self.column);
         }
 
         if self.peek() == '\"' {

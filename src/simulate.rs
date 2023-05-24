@@ -28,6 +28,11 @@ fn simulate_statement(
     state: &mut HashMap<String, i64>,
 ) {
     match statement.node_type {
+        NodeType::Statement => {
+            for child in &statement.children {
+                simulate_statement(child, symbol_table, string_list, state);
+            }
+        }
         NodeType::PrintStatement => {
             let expression = &statement.children[0];
             match expression.node_type {

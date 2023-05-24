@@ -7,7 +7,8 @@ use crate::{
 
 // program -> statement_list
 // statement_list -> statement . statement_list | ε
-// statement -> print_statement | assignment_statement | if_statement
+// statement -> print_statement statement_tail | assignment_statement statement_tail | if_statement statement_tail
+// statement_tail -> , statement | ε
 // print_statement -> si expression
 // if_statement -> dersom condition gjør følgende: statement
 // assignment_statement -> la identifier være expression
@@ -69,14 +70,26 @@ impl Parser {
         match self.token.token_type() {
             crate::lexer::TokenType::Si => {
                 node.children.push(self.print_statement());
+                if *self.token.token_type() == crate::lexer::TokenType::Comma {
+                    self.advance();
+                    node.children.push(self.statement());
+                }
             }
             crate::lexer::TokenType::La => {
                 node.children.push(self.assignment_statement());
+                if *self.token.token_type() == crate::lexer::TokenType::Comma {
+                    self.advance();
+                    node.children.push(self.statement());
+                }
             }
             crate::lexer::TokenType::Dersom => {
                 node.children.push(self.if_statement());
+                if *self.token.token_type() == crate::lexer::TokenType::Comma {
+                    self.advance();
+                    node.children.push(self.statement());
+                }
             }
-            _ => panic!("Expected statement but found {:?}", self.token.token_type()),
+            _ => panic!("Expected statement but found {:?} on line {}", self.token.token_type(), self.token.line()),
         }
         node
     }
@@ -112,6 +125,7 @@ impl Parser {
             self.expect(crate::lexer::TokenType::Følgende);
             self.expect(crate::lexer::TokenType::Colon);
             node.children.push(self.statement());
+            self.expect(crate::lexer::TokenType::Dot);
         }
         node
     }
