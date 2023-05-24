@@ -2,7 +2,7 @@ use std::{error::Error, fs::File, io::Write};
 
 use crate::{lexer::Token, utils};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NodeType {
     Program,
     StatementList,
@@ -11,6 +11,7 @@ pub enum NodeType {
     Expression,
 }
 
+#[derive(Debug, Clone)]
 pub struct Node {
     pub token: Option<Token>,
     pub children: Vec<Box<Node>>,
@@ -38,6 +39,43 @@ impl Node {
         utils::graphwiz_to_png("ast.dot", filename).expect("Failed to convert dot file to png");
         std::fs::remove_file("ast.dot").expect("Failed to delete ast.dot");
         Ok(())
+    }
+}
+
+pub fn simplify_tree(ast: &mut Box<Node>) {
+    simplify_tree_aux(ast);
+}
+
+fn simplify_tree_aux(ast: &mut Box<Node>) {
+    let mut new_children = Vec::new();
+    for child in &mut ast.children {
+        simplify_tree_aux(child);
+        new_children.push(child.clone());
+    }
+    ast.children = new_children;
+
+    match ast.node_type {
+        NodeType::Program => {
+            if ast.children.len() == 1 {
+                *ast = ast.children.pop().unwrap();
+            }
+        }
+        NodeType::StatementList => {
+            if ast.children.len() == 1 {
+                *ast = ast.children.pop().unwrap();
+            }
+        }
+        NodeType::Statement => {
+            if ast.children.len() == 1 {
+                *ast = ast.children.pop().unwrap();
+            }
+        }
+        NodeType::PrintStatement => {}
+        NodeType::Expression => {
+            if ast.children.len() == 1 {
+                *ast = ast.children.pop().unwrap();
+            }
+        }
     }
 }
 
