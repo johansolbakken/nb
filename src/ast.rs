@@ -1,12 +1,4 @@
-use std::{
-    error::Error,
-    fs::{write, File},
-    io::Write,
-    ops::Deref,
-    path::Path,
-    path::PathBuf,
-    str::FromStr,
-};
+use std::{error::Error, fs::File, io::Write};
 
 use crate::{lexer::Token, utils};
 
@@ -14,7 +6,6 @@ use crate::{lexer::Token, utils};
 pub enum NodeType {
     Program,
     StatementList,
-    StatementListTail,
     Statement,
     PrintStatement,
     Expression,
