@@ -5,9 +5,10 @@ mod lexer;
 mod parser;
 mod symbol;
 mod utils;
+mod simulate;
 
 fn main() {
-    tracing_subscriber::fmt::init();
+    // tracing_subscriber::fmt::init();
 
     let file = "examples/si.nb";
     info!("Reading source: {}", file);
@@ -28,6 +29,9 @@ fn main() {
     tree.write_to_file("ast.png")
         .expect("Failed to write ast to file");
     string_list.write_to_file("string_list.txt");
+
+    info!("Simulating");
+    simulate::simulate(&tree, &string_list);
 
     info!("Done!");
 }
