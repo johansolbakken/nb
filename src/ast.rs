@@ -16,6 +16,7 @@ pub enum NodeType {
     Expression,
     IfStatement,
     Condition,
+    FunctionDefinition,
 }
 
 #[derive(Debug, Clone)]
@@ -106,6 +107,7 @@ fn simplify_tree_aux(ast: &mut Box<Node>) {
         NodeType::AssignmentStatement => {}
         NodeType::IfStatement => {}
         NodeType::Condition => {}
+        NodeType::FunctionDefinition => {}
     }
 }
 
@@ -137,6 +139,22 @@ pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
             match token.token_type() {
                 crate::lexer::TokenType::Identifier(name) => {
                     let symbol = symbol_table.add(name, crate::symbol::SymbolKind::Var);
+                    ast.children[0].token = Some(Token::new(
+                        crate::lexer::TokenType::SymbolRef(symbol),
+                        token.line(),
+                        token.column(),
+                    ));
+                    return;
+                }
+                _ => {}
+            }
+        }
+    }
+    if let NodeType::FunctionDefinition = ast.node_type {
+        if let Some(token) = &ast.children[0].token {
+            match token.token_type() {
+                crate::lexer::TokenType::Identifier(name) => {
+                    let symbol = symbol_table.add(name, crate::symbol::SymbolKind::Func);
                     ast.children[0].token = Some(Token::new(
                         crate::lexer::TokenType::SymbolRef(symbol),
                         token.line(),

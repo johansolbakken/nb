@@ -1,3 +1,8 @@
+mekanisme hei gjør følgende:
+    si "Hei",
+    si "Vær en venn".
+.
+
 si "heu".
 si "hællæ vercden!".
 

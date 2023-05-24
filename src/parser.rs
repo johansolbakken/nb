@@ -7,7 +7,7 @@ use crate::{
 
 // program -> statement_list
 // statement_list -> statement . statement_list | ε
-// statement -> print_statement statement_tail | assignment_statement statement_tail | if_statement statement_tail
+// statement -> print_statement statement_tail | assignment_statement statement_tail | if_statement statement_tail | function_definition
 // statement_tail -> , statement | ε
 // print_statement -> si expression
 // if_statement -> dersom condition gjør følgende: statement
@@ -89,7 +89,14 @@ impl Parser {
                     node.children.push(self.statement());
                 }
             }
-            _ => panic!("Expected statement but found {:?} on line {}", self.token.token_type(), self.token.line()),
+            crate::lexer::TokenType::Mekanisme => {
+                node.children.push(self.function_definition());
+            }
+            _ => panic!(
+                "Expected statement but found {:?} on line {}",
+                self.token.token_type(),
+                self.token.line()
+            ),
         }
         node
     }
@@ -195,6 +202,21 @@ impl Parser {
                 self.token.token_type()
             ),
         }
+        node
+    }
+
+    fn function_definition(&mut self) -> Box<Node> {
+        let mut node = Box::new(Node::new(NodeType::FunctionDefinition));
+        self.expect(crate::lexer::TokenType::Mekanisme);
+        node.children.push(self.identifier());
+        // self.expect(crate::lexer::TokenType::Tar);
+        // self.expect(crate::lexer::TokenType::Inn);
+        // node.children.push(self.identifier());
+        self.expect(crate::lexer::TokenType::Gjør);
+        self.expect(crate::lexer::TokenType::Følgende);
+        self.expect(crate::lexer::TokenType::Colon);
+        node.children.push(self.statement());
+        self.expect(crate::lexer::TokenType::Dot);
         node
     }
 

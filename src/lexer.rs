@@ -23,6 +23,7 @@ pub enum TokenType {
     Colon,
     SemiColon,
     Comma,
+    Mekanisme,
     StringLiteral(String),
     StringListIndex(usize),
     SymbolRef(Box<Symbol>),
@@ -162,6 +163,7 @@ impl Lexer {
             ("dersom", TokenType::Dersom),
             ("gjør", TokenType::Gjør),
             ("følgende", TokenType::Følgende),
+            ("mekanisme", TokenType::Mekanisme),
         ]
         .iter()
         .cloned()
