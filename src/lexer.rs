@@ -4,6 +4,7 @@ use tracing::info;
 pub enum TokenType {
     Si,
     StringLiteral(String),
+    StringListIndex(usize),
     Identifier(String),
     Dot,
     EOF,

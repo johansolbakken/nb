@@ -1,6 +1,6 @@
 use std::{error::Error, fs::File, io::Write};
 
-use crate::{lexer::Token, utils};
+use crate::{lexer::Token, symbol::StringList, utils};
 
 #[derive(Debug, Clone)]
 pub enum NodeType {
@@ -76,6 +76,28 @@ fn simplify_tree_aux(ast: &mut Box<Node>) {
                 *ast = ast.children.pop().unwrap();
             }
         }
+    }
+}
+
+pub fn fill_string_list(ast: &mut Box<Node>, string_list: &mut StringList) {
+    if let NodeType::Expression = ast.node_type {
+        if let Some(token) = &ast.token {
+            match token.token_type() {
+                crate::lexer::TokenType::StringLiteral(value) => {
+                    let index = string_list.add(value);
+                    ast.token = Some(Token::new(
+                        crate::lexer::TokenType::StringListIndex(index),
+                        token.line(),
+                        token.column(),
+                    ));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    for child in &mut ast.children {
+        fill_string_list(child, string_list);
     }
 }
 
