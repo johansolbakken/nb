@@ -1,43 +1,13 @@
-use crate::lexer::{Lexer, Token};
+use crate::{
+    ast::{Node, NodeType},
+    lexer::{Lexer, Token},
+};
 
 // program -> statement_list
 // statement_list -> statement statement_list | ε
 // statement -> print_statement .
 // print_statement -> si expression
 // expression -> string_literal
-
-#[derive(Debug)]
-pub enum NodeType {
-    Program,
-    StatementList,
-    StatementListTail,
-    Statement,
-    PrintStatement,
-    Expression,
-}
-
-pub struct Node {
-    token: Option<Token>,
-    children: Vec<Box<Node>>,
-    node_type: NodeType,
-}
-
-impl Node {
-    pub fn print(&self) {
-        self.print_aux(0);
-    }
-
-    fn print_aux(&self, indent: usize) {
-        let indent_str = " ".repeat(indent);
-        println!("{}{:?}", indent_str, self.node_type);
-        if let Some(token) = &self.token {
-            println!("{}{:?}", indent_str, token);
-        }
-        for child in &self.children {
-            child.print_aux(indent + 2);
-        }
-    }
-}
 
 pub struct Parser {
     lexer: Lexer,

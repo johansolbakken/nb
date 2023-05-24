@@ -1,5 +1,6 @@
 use tracing::info;
 
+mod ast;
 mod lexer;
 mod parser;
 mod utils;
@@ -8,8 +9,9 @@ fn main() {
     tracing_subscriber::fmt::init();
 
     let source = utils::read_file("examples/si.nb").expect("Failed to read file");
-    let mut lexer = lexer::Lexer::new(String::from(source));
+    let lexer = lexer::Lexer::new(String::from(source));
     let mut parser = parser::Parser::new(lexer);
-    let ast = parser.parse();
-    ast.print();
+    let tree = parser.parse();
+    tree.write_to_file("ast.png")
+        .expect("Failed to write ast to file");
 }
