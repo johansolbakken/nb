@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error, fs::File, io::Write};
 
-use crate::ast::Node;
+pub type SymbolRef = usize;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SymbolKind {
@@ -23,11 +23,10 @@ pub struct Symbol {
     pub name: String,
     pub kind: SymbolKind,
     pub type_: Type,
-    pub node: Option<Box<Node>>,
 }
 
 pub struct SymbolTable {
-    symbols: HashMap<String, Box<Symbol>>,
+    symbols: HashMap<SymbolRef, Box<Symbol>>,
 }
 
 impl SymbolTable {
@@ -37,26 +36,44 @@ impl SymbolTable {
         }
     }
 
-    pub fn add(&mut self, name: &str, kind: SymbolKind) -> Box<Symbol> {
-        if self.symbols.contains_key(name) {
-            return self.get(&name.to_string());
+    pub fn add(&mut self, name: &str, kind: SymbolKind) -> SymbolRef {
+        if self.contains_name(name) {
+            for (symbol_ref, symbol) in self.symbols.iter() {
+                if symbol.name == name {
+                    return *symbol_ref;
+                }
+            }
         }
         let symbol = Symbol {
             name: name.to_string(),
             kind,
             type_: Type::Unknown,
-            node: None,
         };
-        self.symbols.insert(name.to_string(), Box::new(symbol));
-        self.symbols.get(name).unwrap().clone()
+        let symbol_ref = self.symbols.len();
+        self.symbols.insert(symbol_ref, Box::new(symbol));
+        symbol_ref
     }
 
-    pub fn set_node(&mut self, name: &str, node: Box<Node>) {
-        self.symbols.get_mut(name).unwrap().node = Some(node);
+    pub fn get(&self, symbol_ref: SymbolRef) -> &Box<Symbol> {
+        self.symbols.get(&symbol_ref).unwrap()
     }
 
-    pub fn get(&self, identifier: &String) -> Box<Symbol> {
-        self.symbols.get(identifier).unwrap().clone()
+    pub fn get_symbol_ref(&self, name: &String) -> Option<SymbolRef> {
+        for (symbol_ref, symbol) in self.symbols.iter() {
+            if symbol.name == *name {
+                return Some(*symbol_ref);
+            }
+        }
+        None
+    }
+
+    pub fn contains_name(&self, name: &str) -> bool {
+        for symbol in self.symbols.values() {
+            if symbol.name == name {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn write_to_file(&self, filename: &str) -> Result<(), Box<dyn Error>> {

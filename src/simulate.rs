@@ -17,17 +17,19 @@ fn simulate_instruction(
                 let value = string_list.get(string_index.clone());
                 println!("{}", value);
             }
-            Operand::Variable(name) => {
-                let value = state.get(name).unwrap();
+            Operand::Variable(symbol_ref) => {
+                let symbol = symbol_table.get(symbol_ref.clone());
+                let value = state.get(&symbol.name).unwrap();
                 println!("{}", value);
             }
             _ => {}
         },
         Opcode::Set => match &instruction.operands[0] {
-            Operand::Variable(name) => match &instruction.operands[1] {
+            Operand::Variable(symbol_ref) => match &instruction.operands[1] {
                 Operand::Immediate(value) => {
+                    let symbol = symbol_table.get(symbol_ref.clone());
                     let value = value.clone();
-                    state.insert(name.clone(), value);
+                    state.insert(symbol.name.clone(), value);
                 }
                 _ => {}
             },

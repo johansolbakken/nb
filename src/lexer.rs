@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::symbol::Symbol;
+use crate::symbol::{self};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
@@ -31,7 +31,7 @@ pub enum TokenType {
     På,
     StringLiteral(String),
     StringListIndex(usize),
-    SymbolRef(Box<Symbol>),
+    Symbol(symbol::SymbolRef),
     Identifier(String),
     IntLiteral(i64),
     FloatLiteral(f64),

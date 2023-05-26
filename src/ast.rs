@@ -1,10 +1,6 @@
 use std::{error::Error, fs::File, io::Write};
 
-use crate::{
-    lexer::Token,
-    symbol::{StringList, SymbolTable},
-    utils,
-};
+use crate::{lexer, symbol, utils};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum NodeType {
@@ -24,7 +20,7 @@ pub enum NodeType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node {
-    pub token: Option<Token>,
+    pub token: Option<lexer::Token>,
     pub children: Vec<Box<Node>>,
     pub node_type: NodeType,
     pub data: String,
@@ -108,14 +104,14 @@ fn simplify_tree_aux(ast: &mut Box<Node>) {
     }
 }
 
-pub fn fill_string_list(ast: &mut Box<Node>, string_list: &mut StringList) {
+pub fn fill_string_list(ast: &mut Box<Node>, string_list: &mut symbol::StringList) {
     if let NodeType::Expression = ast.node_type {
         if let Some(token) = &ast.token {
             match token.token_type() {
-                crate::lexer::TokenType::StringLiteral(value) => {
+                lexer::TokenType::StringLiteral(value) => {
                     let index = string_list.add(value);
-                    ast.token = Some(Token::new(
-                        crate::lexer::TokenType::StringListIndex(index),
+                    ast.token = Some(lexer::Token::new(
+                        lexer::TokenType::StringListIndex(index),
                         token.line(),
                         token.column(),
                     ));
@@ -130,14 +126,14 @@ pub fn fill_string_list(ast: &mut Box<Node>, string_list: &mut StringList) {
     }
 }
 
-pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
+pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut symbol::SymbolTable) {
     if let NodeType::AssignmentStatement = ast.node_type {
         if let Some(token) = &ast.children[0].token {
             match token.token_type() {
-                crate::lexer::TokenType::Identifier(name) => {
-                    let symbol = symbol_table.add(name, crate::symbol::SymbolKind::Variable);
-                    ast.children[0].token = Some(Token::new(
-                        crate::lexer::TokenType::SymbolRef(symbol),
+                lexer::TokenType::Identifier(name) => {
+                    let symbol = symbol_table.add(name, symbol::SymbolKind::Variable);
+                    ast.children[0].token = Some(lexer::Token::new(
+                        lexer::TokenType::Symbol(symbol),
                         token.line(),
                         token.column(),
                     ));
@@ -153,10 +149,10 @@ pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
     if let NodeType::FunctionDefinition = ast.node_type {
         if let Some(token) = &ast.children[0].token {
             match token.token_type() {
-                crate::lexer::TokenType::Identifier(name) => {
-                    let symbol = symbol_table.add(name, crate::symbol::SymbolKind::Function);
-                    ast.children[0].token = Some(Token::new(
-                        crate::lexer::TokenType::SymbolRef(symbol),
+                lexer::TokenType::Identifier(name) => {
+                    let symbol = symbol_table.add(name, symbol::SymbolKind::Function);
+                    ast.children[0].token = Some(lexer::Token::new(
+                        lexer::TokenType::Symbol(symbol),
                         token.line(),
                         token.column(),
                     ));
@@ -172,10 +168,12 @@ pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
     if let NodeType::FunctionCall = ast.node_type {
         if let Some(token) = &ast.children[0].token {
             match token.token_type() {
-                crate::lexer::TokenType::Identifier(name) => {
-                    let symbol = symbol_table.get(name);
-                    ast.children[0].token = Some(Token::new(
-                        crate::lexer::TokenType::SymbolRef(symbol),
+                lexer::TokenType::Identifier(name) => {
+                    let symbol = symbol_table
+                        .get_symbol_ref(name)
+                        .expect("Function not found");
+                    ast.children[0].token = Some(lexer::Token::new(
+                        lexer::TokenType::Symbol(symbol),
                         token.line(),
                         token.column(),
                     ));
@@ -188,10 +186,10 @@ pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
 
     match ast.token.clone() {
         Some(token) => match token.token_type() {
-            crate::lexer::TokenType::Identifier(name) => {
-                let symbol = symbol_table.get(name);
-                ast.token = Some(Token::new(
-                    crate::lexer::TokenType::SymbolRef(symbol),
+            lexer::TokenType::Identifier(name) => {
+                let symbol = symbol_table.get_symbol_ref(name).expect("Symbol not found");
+                ast.token = Some(lexer::Token::new(
+                    lexer::TokenType::Symbol(symbol),
                     token.line(),
                     token.column(),
                 ));
@@ -204,29 +202,6 @@ pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
 
     for child in &mut ast.children {
         find_symbols(child, symbol_table);
-    }
-}
-
-pub fn resolve_symbols(symbol_table: &mut SymbolTable, ast: &Box<Node>) {
-    match ast.node_type {
-        NodeType::FunctionDefinition => {
-            let identifier = ast.children[0].clone();
-            let body = ast.children[1].clone();
-            match identifier.token {
-                Some(token) => match &token.token_type() {
-                    crate::lexer::TokenType::SymbolRef(symbol) => {
-                        symbol_table.set_node(&symbol.name, body);
-                    }
-                    _ => {}
-                },
-                None => {}
-            }
-        }
-        _ => {
-            for child in &ast.children {
-                resolve_symbols(symbol_table, child);
-            }
-        }
     }
 }
 

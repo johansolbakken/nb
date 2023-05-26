@@ -2,13 +2,7 @@
 
 use std::{error::Error, fs::File, io::Write};
 
-use tracing::info;
-
-use crate::{
-    ast::{Node, NodeType},
-    lexer::{Token, TokenType},
-    utils,
-};
+use crate::{ast, lexer, symbol, utils};
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Opcode {
@@ -36,7 +30,7 @@ pub enum Operand {
     Immediate(i64),
     Label(usize),
     String(usize),
-    Variable(String),
+    Variable(symbol::SymbolRef),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -83,20 +77,20 @@ impl CFG {
         cfg
     }
 
-    pub fn build(&mut self, ast: &Box<Node>) {
+    pub fn build(&mut self, ast: &Box<ast::Node>) {
         self.add_empty_entry_block();
         self.create_basic_blocks(ast, self.entry);
         self.add_empty_exit_block();
     }
 
-    fn create_basic_blocks(&mut self, ast: &Box<Node>, parent_id: usize) -> usize {
+    fn create_basic_blocks(&mut self, ast: &Box<ast::Node>, parent_id: usize) -> usize {
         let mut seq_id = parent_id;
         match ast.node_type {
-            NodeType::PrintStatement => {
+            ast::NodeType::PrintStatement => {
                 let expression = &ast.children[0];
                 if let Some(token) = &expression.token {
                     match token.token_type() {
-                        TokenType::StringListIndex(index) => {
+                        lexer::TokenType::StringListIndex(index) => {
                             let id = self.next_id();
                             let instruction = Instruction {
                                 id,
@@ -112,7 +106,7 @@ impl CFG {
                             self.blocks.push(block);
                             seq_id = id;
                         }
-                        TokenType::IntLiteral(value) => {
+                        lexer::TokenType::IntLiteral(value) => {
                             let id = self.next_id();
                             let instruction = Instruction {
                                 id,
@@ -128,12 +122,12 @@ impl CFG {
                             self.blocks.push(block);
                             seq_id = id;
                         }
-                        TokenType::SymbolRef(symbol) => {
+                        lexer::TokenType::Symbol(symbol) => {
                             let id = self.next_id();
                             let instruction = Instruction {
                                 id,
                                 opcode: Opcode::Print,
-                                operands: vec![Operand::Variable(symbol.name.clone())],
+                                operands: vec![Operand::Variable(symbol.clone())],
                             };
                             let block = BasicBlock {
                                 id,
@@ -148,22 +142,21 @@ impl CFG {
                     }
                 }
             }
-            NodeType::AssignmentStatement => {
+            ast::NodeType::AssignmentStatement => {
                 let identifier = &ast.children[0];
                 let expression = &ast.children[1];
                 if let Some(token) = &identifier.token {
                     match token.token_type() {
-                        TokenType::SymbolRef(symbol) => {
+                        lexer::TokenType::Symbol(symbol_ref) => {
                             if let Some(token) = &expression.token {
                                 match token.token_type() {
-                                    TokenType::IntLiteral(value) => {
-                                        let variable = symbol.name.clone();
+                                    lexer::TokenType::IntLiteral(value) => {
                                         let id = self.next_id();
                                         let instruction = Instruction {
                                             id,
                                             opcode: Opcode::Set,
                                             operands: vec![
-                                                Operand::Variable(variable),
+                                                Operand::Variable(symbol_ref.clone()),
                                                 Operand::Immediate(*value),
                                             ],
                                         };

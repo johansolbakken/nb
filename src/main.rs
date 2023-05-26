@@ -42,9 +42,6 @@ fn main() {
     let mut symbol_table = symbol::SymbolTable::new();
     ast::find_symbols(&mut tree, &mut symbol_table);
 
-    info!("Resolving symbols");
-    ast::resolve_symbols(&mut symbol_table, &tree);
-
     info!("Building control flow graph");
     let mut cfg = cfg::CFG::new();
     cfg.build(&tree);
