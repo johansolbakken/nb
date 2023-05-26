@@ -1,4 +1,4 @@
-use tracing::info;
+use tracing::{error, info};
 
 use crate::{
     ast::{Node, NodeType},
@@ -290,10 +290,14 @@ impl Parser {
         let mut node = Box::new(Node::new(NodeType::Expression));
         match self.token.token_type() {
             crate::lexer::TokenType::Identifier(_) => {}
-            _ => panic!(
-                "Expected identifier but found {:?}",
-                self.token.token_type()
-            ),
+            _ => {
+                error!(
+                    "Expected identifier but found {:?} at line {}",
+                    self.token.token_type(),
+                    self.token.line()
+                );
+                panic!();
+            }
         }
 
         node.token = Some(self.token.clone());

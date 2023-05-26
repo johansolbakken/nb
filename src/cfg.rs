@@ -87,62 +87,64 @@ impl CFG {
     fn create_basic_blocks(&mut self, ast: &Box<ast::Node>, parent_id: usize) -> usize {
         let mut seq_id = parent_id;
         match ast.node_type {
-            ast::NodeType::PrintStatement => {
-                let expression = &ast.children[0];
-                if let Some(token) = &expression.token {
-                    match token.token_type() {
-                        lexer::TokenType::StringListIndex(index) => {
-                            let id = self.next_id();
-                            let instruction = Instruction {
-                                id,
-                                opcode: Opcode::Print,
-                                operands: vec![Operand::String(*index)],
-                            };
-                            let block = BasicBlock {
-                                id,
-                                instructions: vec![instruction],
-                                predecessors: vec![seq_id],
-                                successors: vec![],
-                            };
-                            self.blocks.push(block);
-                            seq_id = id;
-                        }
-                        lexer::TokenType::IntLiteral(value) => {
-                            let id = self.next_id();
-                            let instruction = Instruction {
-                                id,
-                                opcode: Opcode::Print,
-                                operands: vec![Operand::Immediate(*value)],
-                            };
-                            let block = BasicBlock {
-                                id,
-                                instructions: vec![instruction],
-                                predecessors: vec![seq_id],
-                                successors: vec![],
-                            };
-                            self.blocks.push(block);
-                            seq_id = id;
-                        }
-                        lexer::TokenType::Symbol(symbol) => {
-                            let id = self.next_id();
-                            let instruction = Instruction {
-                                id,
-                                opcode: Opcode::Print,
-                                operands: vec![Operand::Variable(symbol.clone())],
-                            };
-                            let block = BasicBlock {
-                                id,
-                                instructions: vec![instruction],
-                                predecessors: vec![seq_id],
-                                successors: vec![],
-                            };
-                            self.blocks.push(block);
-                            seq_id = id;
-                        }
-                        _ => {}
+            ast::NodeType::PrintStatement => match &ast.children[0].token {
+                Some(token) => match token.token_type() {
+                    lexer::TokenType::StringListIndex(string_id) => {
+                        let id = self.next_id();
+                        let instruction = Instruction {
+                            id,
+                            opcode: Opcode::Print,
+                            operands: vec![Operand::String(*string_id)],
+                        };
+                        let block = BasicBlock {
+                            id,
+                            instructions: vec![instruction],
+                            predecessors: vec![seq_id],
+                            successors: vec![],
+                        };
+                        self.blocks.push(block);
+                        seq_id = id;
                     }
+                    lexer::TokenType::Symbol(symbol) => {
+                        let id = self.next_id();
+                        let instruction = Instruction {
+                            id,
+                            opcode: Opcode::Print,
+                            operands: vec![Operand::Variable(symbol.clone())],
+                        };
+                        let block = BasicBlock {
+                            id,
+                            instructions: vec![instruction],
+                            predecessors: vec![seq_id],
+                            successors: vec![],
+                        };
+                        self.blocks.push(block);
+                        seq_id = id;
+                    }
+                    _ => {
+                        panic!("Invalid token type for print statement");
+                    }
+                },
+                None => {
+                    let expression = &ast.children[0];
+                    seq_id = self.create_basic_blocks(expression, seq_id);
+                    let temp_id = self.get_last_temp_id();
+                    let id = self.next_id();
+                    let instruction = Instruction {
+                        id,
+                        opcode: Opcode::Print,
+                        operands: vec![Operand::Temporary(temp_id)],
+                    };
+                    let block = BasicBlock {
+                        id,
+                        instructions: vec![instruction],
+                        predecessors: vec![seq_id],
+                        successors: vec![],
+                    };
+                    self.blocks.push(block);
+                    seq_id = id;
                 }
-            }
+            },
             ast::NodeType::AssignmentStatement => {
                 let expression = &ast.children[1];
                 seq_id = self.create_basic_blocks(expression, seq_id);
@@ -298,7 +300,7 @@ impl CFG {
                                 seq_id = id;
                             }
                             _ => {
-                                panic!("No token found for expression");
+                                panic!("No token found for expression {:?}", token);
                             }
                         }
                     } else {

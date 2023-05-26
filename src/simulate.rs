@@ -16,8 +16,11 @@ fn simulate_instruction(
 ) {
     match instruction.opcode {
         Opcode::Print => match &instruction.operands[0] {
-            Operand::String(string_index) => {
-                let value = string_list.get(string_index.clone());
+            Operand::Immediate(value) => {
+                println!("{}", value);
+            }
+            Operand::Temporary(temporary_id) => {
+                let value = temporaries.get(temporary_id).unwrap();
                 println!("{}", value);
             }
             Operand::Variable(symbol_ref) => {
@@ -25,7 +28,13 @@ fn simulate_instruction(
                 let value = state.get(&symbol.name).unwrap();
                 println!("{}", value);
             }
-            _ => {}
+            Operand::String(string_id) => {
+                let string = string_list.get(string_id.clone());
+                println!("{}", string);
+            }
+            _ => {
+                unreachable!();
+            }
         },
         Opcode::Set => match &instruction.operands[0] {
             Operand::Variable(symbol_ref) => match &instruction.operands[1] {
