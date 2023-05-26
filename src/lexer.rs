@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use tracing::info;
-
 use crate::symbol::Symbol;
 
 #[derive(Debug, PartialEq, Clone)]
