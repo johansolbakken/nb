@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use tracing::info;
+
 use crate::{
     cfg::{BasicBlock, Instruction, Opcode, Operand, CFG},
     symbol::{StringList, SymbolTable},
@@ -65,7 +67,60 @@ fn simulate_instruction(
             };
             temporaries.insert(temporary_id, left + right);
         }
-        _ => {}
+        Opcode::Sub => {
+            let temporary_id = match &instruction.operands[0] {
+                Operand::Temporary(temporary_id) => temporary_id.clone(),
+                _ => unreachable!(),
+            };
+            let left = match &instruction.operands[1] {
+                Operand::Immediate(value) => value.clone(),
+                Operand::Temporary(temporary_id) => temporaries.get(temporary_id).unwrap().clone(),
+                _ => unreachable!(),
+            };
+            let right = match &instruction.operands[2] {
+                Operand::Immediate(value) => value.clone(),
+                Operand::Temporary(temporary_id) => temporaries.get(temporary_id).unwrap().clone(),
+                _ => unreachable!(),
+            };
+            temporaries.insert(temporary_id, left - right);
+        }
+        Opcode::Mul => {
+            let temporary_id = match &instruction.operands[0] {
+                Operand::Temporary(temporary_id) => temporary_id.clone(),
+                _ => unreachable!(),
+            };
+            let left = match &instruction.operands[1] {
+                Operand::Immediate(value) => value.clone(),
+                Operand::Temporary(temporary_id) => temporaries.get(temporary_id).unwrap().clone(),
+                _ => unreachable!(),
+            };
+            let right = match &instruction.operands[2] {
+                Operand::Immediate(value) => value.clone(),
+                Operand::Temporary(temporary_id) => temporaries.get(temporary_id).unwrap().clone(),
+                _ => unreachable!(),
+            };
+            temporaries.insert(temporary_id, left * right);
+        }
+        Opcode::Div => {
+            let temporary_id = match &instruction.operands[0] {
+                Operand::Temporary(temporary_id) => temporary_id.clone(),
+                _ => unreachable!(),
+            };
+            let left = match &instruction.operands[1] {
+                Operand::Immediate(value) => value.clone(),
+                Operand::Temporary(temporary_id) => temporaries.get(temporary_id).unwrap().clone(),
+                _ => unreachable!(),
+            };
+            let right = match &instruction.operands[2] {
+                Operand::Immediate(value) => value.clone(),
+                Operand::Temporary(temporary_id) => temporaries.get(temporary_id).unwrap().clone(),
+                _ => unreachable!(),
+            };
+            temporaries.insert(temporary_id, left / right);
+        }
+        _ => {
+            println!("unimplemented instruction: {:?}", instruction);
+        }
     }
 }
 

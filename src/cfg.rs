@@ -207,6 +207,69 @@ impl CFG {
                             self.blocks.push(block);
                             seq_id = id;
                         }
+                        "-" => {
+                            let id = self.next_id();
+                            let temp_id = self.next_temp_id();
+                            let instruction = Instruction {
+                                id,
+                                opcode: Opcode::Sub,
+                                operands: vec![
+                                    Operand::Temporary(temp_id),
+                                    Operand::Temporary(left_temp),
+                                    Operand::Temporary(right_temp),
+                                ],
+                            };
+                            let block = BasicBlock {
+                                id,
+                                instructions: vec![instruction],
+                                predecessors: vec![seq_id],
+                                successors: vec![],
+                            };
+                            self.blocks.push(block);
+                            seq_id = id;
+                        }
+                        "*" => {
+                            let id = self.next_id();
+                            let temp_id = self.next_temp_id();
+                            let instruction = Instruction {
+                                id,
+                                opcode: Opcode::Mul,
+                                operands: vec![
+                                    Operand::Temporary(temp_id),
+                                    Operand::Temporary(left_temp),
+                                    Operand::Temporary(right_temp),
+                                ],
+                            };
+                            let block = BasicBlock {
+                                id,
+                                instructions: vec![instruction],
+                                predecessors: vec![seq_id],
+                                successors: vec![],
+                            };
+                            self.blocks.push(block);
+                            seq_id = id;
+                        }
+                        "/" => {
+                            let id = self.next_id();
+                            let temp_id = self.next_temp_id();
+                            let instruction = Instruction {
+                                id,
+                                opcode: Opcode::Div,
+                                operands: vec![
+                                    Operand::Temporary(temp_id),
+                                    Operand::Temporary(left_temp),
+                                    Operand::Temporary(right_temp),
+                                ],
+                            };
+                            let block = BasicBlock {
+                                id,
+                                instructions: vec![instruction],
+                                predecessors: vec![seq_id],
+                                successors: vec![],
+                            };
+                            self.blocks.push(block);
+                            seq_id = id;
+                        }
                         _ => {
                             panic!("Unknown operator");
                         }

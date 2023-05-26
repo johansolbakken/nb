@@ -92,11 +92,13 @@ fn simplify_tree_aux(ast: &mut Box<Node>) {
         NodeType::FunctionDefinition => {}
         NodeType::FunctionCall => {}
         NodeType::Term => {
+            ast.node_type = NodeType::Expression;
             if ast.children.len() == 1 {
                 *ast = ast.children.pop().unwrap();
             }
         }
         NodeType::Factor => {
+            ast.node_type = NodeType::Expression;
             if ast.children.len() == 1 {
                 *ast = ast.children.pop().unwrap();
             }

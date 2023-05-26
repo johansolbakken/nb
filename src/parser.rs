@@ -1,3 +1,5 @@
+use tracing::info;
+
 use crate::{
     ast::{Node, NodeType},
     lexer::{Lexer, Token},

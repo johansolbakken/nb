@@ -1,3 +1,4 @@
-la a være 1 pluss 2 pluss 3 pluss 4.
-si "1 pluss 2 pluss 3 er".
+la a være 2 delt på 1 pluss 2 minus 3 ganger 2.
 si a.
+la b være 8 delt på 2.
+si b.
