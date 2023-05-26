@@ -10,6 +10,7 @@ fn simulate_instruction(
     symbol_table: &SymbolTable,
     string_list: &StringList,
     state: &mut HashMap<String, i64>,
+    temporaries: &mut HashMap<usize, i64>,
 ) {
     match instruction.opcode {
         Opcode::Print => match &instruction.operands[0] {
@@ -31,10 +32,39 @@ fn simulate_instruction(
                     let value = value.clone();
                     state.insert(symbol.name.clone(), value);
                 }
+                Operand::Temporary(temporary_id) => {
+                    let symbol = symbol_table.get(symbol_ref.clone());
+                    let value = temporaries.get(temporary_id).unwrap();
+                    state.insert(symbol.name.clone(), value.clone());
+                }
+                _ => {}
+            },
+            Operand::Temporary(temporary_id) => match &instruction.operands[1] {
+                Operand::Immediate(value) => {
+                    let value = value.clone();
+                    temporaries.insert(temporary_id.clone(), value);
+                }
                 _ => {}
             },
             _ => {}
         },
+        Opcode::Add => {
+            let temporary_id = match &instruction.operands[0] {
+                Operand::Temporary(temporary_id) => temporary_id.clone(),
+                _ => unreachable!(),
+            };
+            let left = match &instruction.operands[1] {
+                Operand::Immediate(value) => value.clone(),
+                Operand::Temporary(temporary_id) => temporaries.get(temporary_id).unwrap().clone(),
+                _ => unreachable!(),
+            };
+            let right = match &instruction.operands[2] {
+                Operand::Immediate(value) => value.clone(),
+                Operand::Temporary(temporary_id) => temporaries.get(temporary_id).unwrap().clone(),
+                _ => unreachable!(),
+            };
+            temporaries.insert(temporary_id, left + right);
+        }
         _ => {}
     }
 }
@@ -44,18 +74,26 @@ fn simulate_basic_block(
     symbol_table: &SymbolTable,
     string_list: &StringList,
     state: &mut HashMap<String, i64>,
+    temporaries: &mut HashMap<usize, i64>,
 ) {
     for instruction in basic_block.get_instructions() {
-        simulate_instruction(instruction, symbol_table, string_list, state);
+        simulate_instruction(instruction, symbol_table, string_list, state, temporaries);
     }
 }
 
 pub fn simulate_cfg(cfg: &CFG, symbol_table: &SymbolTable, string_list: &StringList) {
     let mut state: HashMap<String, i64> = HashMap::new();
+    let mut temporaries: HashMap<usize, i64> = HashMap::new();
     let mut id = cfg.entry_block();
     loop {
         let block = cfg.get_block(id);
-        simulate_basic_block(block, symbol_table, string_list, &mut state);
+        simulate_basic_block(
+            block,
+            symbol_table,
+            string_list,
+            &mut state,
+            &mut temporaries,
+        );
         id = cfg.get_successor(id);
         if id == cfg.exit_block() {
             break;

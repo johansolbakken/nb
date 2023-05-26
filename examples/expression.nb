@@ -1,0 +1,3 @@
+la a være 1 pluss 2 pluss 3 pluss 4.
+si "1 pluss 2 pluss 3 er".
+si a.

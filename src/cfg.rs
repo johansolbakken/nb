@@ -2,6 +2,8 @@
 
 use std::{error::Error, fs::File, io::Write};
 
+use tracing::info;
+
 use crate::{ast, lexer, symbol, utils};
 
 #[derive(Debug, Clone, PartialEq, Copy)]
@@ -31,6 +33,7 @@ pub enum Operand {
     Label(usize),
     String(usize),
     Variable(symbol::SymbolRef),
+    Temporary(usize),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -52,10 +55,6 @@ impl BasicBlock {
     pub fn get_instructions(&self) -> &Vec<Instruction> {
         &self.instructions
     }
-
-    pub fn get_successors(&self) -> &Vec<usize> {
-        &self.successors
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -64,6 +63,7 @@ pub struct CFG {
     entry: usize,
     exit: usize,
     next_id: usize,
+    next_temporary_variable_id: usize,
 }
 
 impl CFG {
@@ -73,6 +73,7 @@ impl CFG {
             entry: 0,
             exit: 0,
             next_id: 0,
+            next_temporary_variable_id: 0,
         };
         cfg
     }
@@ -143,40 +144,103 @@ impl CFG {
                 }
             }
             ast::NodeType::AssignmentStatement => {
-                let identifier = &ast.children[0];
                 let expression = &ast.children[1];
+                seq_id = self.create_basic_blocks(expression, seq_id);
+
+                let temp_id = self.get_last_temp_id();
+                let identifier = &ast.children[0];
                 if let Some(token) = &identifier.token {
                     match token.token_type() {
-                        lexer::TokenType::Symbol(symbol_ref) => {
-                            if let Some(token) = &expression.token {
-                                match token.token_type() {
-                                    lexer::TokenType::IntLiteral(value) => {
-                                        let id = self.next_id();
-                                        let instruction = Instruction {
-                                            id,
-                                            opcode: Opcode::Set,
-                                            operands: vec![
-                                                Operand::Variable(symbol_ref.clone()),
-                                                Operand::Immediate(*value),
-                                            ],
-                                        };
-                                        let block = BasicBlock {
-                                            id,
-                                            instructions: vec![instruction],
-                                            predecessors: vec![seq_id],
-                                            successors: vec![],
-                                        };
-                                        self.blocks.push(block);
-                                        seq_id = id;
-                                    }
-                                    _ => {}
-                                }
-                            }
+                        lexer::TokenType::Symbol(symbol) => {
+                            let id = self.next_id();
+                            let instruction = Instruction {
+                                id,
+                                opcode: Opcode::Set,
+                                operands: vec![
+                                    Operand::Variable(symbol.clone()),
+                                    Operand::Temporary(temp_id),
+                                ],
+                            };
+                            let block = BasicBlock {
+                                id,
+                                instructions: vec![instruction],
+                                predecessors: vec![seq_id],
+                                successors: vec![],
+                            };
+                            self.blocks.push(block);
+                            seq_id = id;
                         }
                         _ => {}
                     }
-                } else {
-                    panic!("No identifier found for assignment statement");
+                }
+            }
+            ast::NodeType::Expression => {
+                if ast.children.len() == 2 {
+                    let left = &ast.children[0];
+                    seq_id = self.create_basic_blocks(left, seq_id);
+                    let left_temp = self.get_last_temp_id();
+                    // generate right part of expression
+                    let right = &ast.children[1];
+                    seq_id = self.create_basic_blocks(right, seq_id);
+                    let right_temp = self.get_last_temp_id();
+
+                    // generate instruction
+                    match ast.data.as_str() {
+                        "+" => {
+                            let id = self.next_id();
+                            let temp_id = self.next_temp_id();
+                            let instruction = Instruction {
+                                id,
+                                opcode: Opcode::Add,
+                                operands: vec![
+                                    Operand::Temporary(temp_id),
+                                    Operand::Temporary(left_temp),
+                                    Operand::Temporary(right_temp),
+                                ],
+                            };
+                            let block = BasicBlock {
+                                id,
+                                instructions: vec![instruction],
+                                predecessors: vec![seq_id],
+                                successors: vec![],
+                            };
+                            self.blocks.push(block);
+                            seq_id = id;
+                        }
+                        _ => {
+                            panic!("Unknown operator");
+                        }
+                    }
+                } else if ast.children.len() == 0 {
+                    if let Some(token) = &ast.token {
+                        match token.token_type() {
+                            lexer::TokenType::IntLiteral(value) => {
+                                let id = self.next_id();
+                                let temp_id = self.next_temp_id();
+                                let instruction = Instruction {
+                                    id,
+                                    opcode: Opcode::Set,
+                                    operands: vec![
+                                        Operand::Temporary(temp_id),
+                                        Operand::Immediate(*value),
+                                    ],
+                                };
+                                let block = BasicBlock {
+                                    id,
+                                    instructions: vec![instruction],
+                                    predecessors: vec![seq_id],
+                                    successors: vec![],
+                                };
+                                self.blocks.push(block);
+                                seq_id = id;
+                            }
+                            _ => {
+                                panic!("No token found for expression");
+                            }
+                        }
+                    } else {
+                        panic!("No token found for expression");
+                    }
                 }
             }
             _ => {
@@ -213,21 +277,20 @@ impl CFG {
         self.blocks.push(block);
     }
 
-    fn get_predecessors(&self, id: usize) -> Vec<usize> {
-        let mut predecessors = Vec::new();
-        for block in &self.blocks {
-            let block_copy = block.clone();
-            if block_copy.successors.contains(&id) {
-                predecessors.push(block_copy.id);
-            }
-        }
-        predecessors
-    }
-
     fn next_id(&mut self) -> usize {
         let id = self.next_id;
         self.next_id += 1;
         id
+    }
+
+    fn next_temp_id(&mut self) -> usize {
+        let id = self.next_temporary_variable_id;
+        self.next_temporary_variable_id += 1;
+        id
+    }
+
+    fn get_last_temp_id(&self) -> usize {
+        self.next_temporary_variable_id - 1
     }
 
     pub fn get_successor(&self, id: usize) -> usize {
