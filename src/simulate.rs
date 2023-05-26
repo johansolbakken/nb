@@ -1,9 +1,6 @@
-use std::{collections::HashMap, string};
-
-use tracing::info;
+use std::collections::HashMap;
 
 use crate::{
-    ast::{Node, NodeType},
     cfg::{BasicBlock, Instruction, Opcode, Operand, CFG},
     symbol::{StringList, SymbolTable},
 };
