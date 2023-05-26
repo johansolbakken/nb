@@ -38,7 +38,8 @@ fn main() {
     ast::resolve_symbols(&mut symbol_table, &tree);
 
     info!("Building control flow graph");
-    let cfg = cfg::CFG::new(&tree);
+    let mut cfg = cfg::CFG::new();
+    cfg.build(&tree);
 
     info!("Writing files");
     tree.write_to_file("ast.png")
