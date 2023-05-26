@@ -28,13 +28,15 @@ pub enum Opcode {
     Ret,
     Push,
     Print,
+    Set,
 }
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Operand {
     Immediate(i64),
     Label(usize),
     String(usize),
+    Variable(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -104,7 +106,39 @@ impl CFG {
                             let block = BasicBlock {
                                 id,
                                 instructions: vec![instruction],
-                                predecessors: vec![parent_id],
+                                predecessors: vec![seq_id],
+                                successors: vec![],
+                            };
+                            self.blocks.push(block);
+                            seq_id = id;
+                        }
+                        TokenType::IntLiteral(value) => {
+                            let id = self.next_id();
+                            let instruction = Instruction {
+                                id,
+                                opcode: Opcode::Print,
+                                operands: vec![Operand::Immediate(*value)],
+                            };
+                            let block = BasicBlock {
+                                id,
+                                instructions: vec![instruction],
+                                predecessors: vec![seq_id],
+                                successors: vec![],
+                            };
+                            self.blocks.push(block);
+                            seq_id = id;
+                        }
+                        TokenType::SymbolRef(symbol) => {
+                            let id = self.next_id();
+                            let instruction = Instruction {
+                                id,
+                                opcode: Opcode::Print,
+                                operands: vec![Operand::Variable(symbol.name.clone())],
+                            };
+                            let block = BasicBlock {
+                                id,
+                                instructions: vec![instruction],
+                                predecessors: vec![seq_id],
                                 successors: vec![],
                             };
                             self.blocks.push(block);
@@ -112,6 +146,44 @@ impl CFG {
                         }
                         _ => {}
                     }
+                }
+            }
+            NodeType::AssignmentStatement => {
+                let identifier = &ast.children[0];
+                let expression = &ast.children[1];
+                if let Some(token) = &identifier.token {
+                    match token.token_type() {
+                        TokenType::SymbolRef(symbol) => {
+                            if let Some(token) = &expression.token {
+                                match token.token_type() {
+                                    TokenType::IntLiteral(value) => {
+                                        let variable = symbol.name.clone();
+                                        let id = self.next_id();
+                                        let instruction = Instruction {
+                                            id,
+                                            opcode: Opcode::Set,
+                                            operands: vec![
+                                                Operand::Variable(variable),
+                                                Operand::Immediate(*value),
+                                            ],
+                                        };
+                                        let block = BasicBlock {
+                                            id,
+                                            instructions: vec![instruction],
+                                            predecessors: vec![seq_id],
+                                            successors: vec![],
+                                        };
+                                        self.blocks.push(block);
+                                        seq_id = id;
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                } else {
+                    panic!("No identifier found for assignment statement");
                 }
             }
             _ => {
@@ -202,7 +274,9 @@ impl CFG {
                 file.write_all(format!("block {}\n", block.id).as_bytes())?;
             }
             for instruction in &block.instructions {
-                file.write_all(format!("{:?}\n", instruction).as_bytes())?;
+                let mut instruction_str = format!("{:?}", instruction);
+                instruction_str = instruction_str.replace("\"", "\\\"");
+                file.write_all(format!("{}\n", instruction_str).as_bytes())?;
             }
             file.write_all(b"\"];\n")?;
             for predecessor in &block.predecessors {
