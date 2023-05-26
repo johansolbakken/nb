@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use tracing::info;
-
 use crate::{
     cfg::{BasicBlock, Instruction, Opcode, Operand, CFG},
     symbol::{StringList, SymbolTable},
