@@ -13,5 +13,10 @@ si arbeider.
 
 dersom arbeider er lik 45 gjør følgende:
     si "Arbeider",
-    gjør sum med 1, 2 og "hei"!.
+    utfør sum med 1, 2 og "hei"!.
 ```
+
+
+#   TODO
+#    TODO Trying to get symbols, but they are copied. So I cannot have recursion, because children are also copied ...
+#     TODO

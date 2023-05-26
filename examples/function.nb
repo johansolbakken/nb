@@ -1,0 +1,9 @@
+mekanisme hei gjør følgende:
+    si "Hei",
+    si "Vær en venn".
+.
+
+utfør hei!.
+utfør hei!.
+utfør hei!.
+utfør hei!.

@@ -1,9 +1,11 @@
 use std::{collections::HashMap, error::Error, fs::File, io::Write};
 
+use crate::ast::Node;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SymbolKind {
-    Var,
-    Func,
+    Variable,
+    Function,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -21,6 +23,7 @@ pub struct Symbol {
     pub name: String,
     pub kind: SymbolKind,
     pub type_: Type,
+    pub node: Option<Box<Node>>,
 }
 
 pub struct SymbolTable {
@@ -42,9 +45,14 @@ impl SymbolTable {
             name: name.to_string(),
             kind,
             type_: Type::Unknown,
+            node: None,
         };
         self.symbols.insert(name.to_string(), Box::new(symbol));
         self.symbols.get(name).unwrap().clone()
+    }
+
+    pub fn set_node(&mut self, name: &str, node: Box<Node>) {
+        self.symbols.get_mut(name).unwrap().node = Some(node);
     }
 
     pub fn get(&self, identifier: &String) -> Box<Symbol> {

@@ -24,6 +24,13 @@ pub enum TokenType {
     SemiColon,
     Comma,
     Mekanisme,
+    Utfør,
+    Exclamation,
+    Pluss,
+    Minus,
+    Ganger,
+    Delt,
+    På,
     StringLiteral(String),
     StringListIndex(usize),
     SymbolRef(Box<Symbol>),
@@ -107,6 +114,11 @@ impl Lexer {
             return Token::new(TokenType::Comma, self.line, self.column);
         }
 
+        if self.peek() == '!' {
+            self.advance();
+            return Token::new(TokenType::Exclamation, self.line, self.column);
+        }
+
         if self.peek() == '\"' {
             self.advance();
             let start = self.position;
@@ -164,6 +176,12 @@ impl Lexer {
             ("gjør", TokenType::Gjør),
             ("følgende", TokenType::Følgende),
             ("mekanisme", TokenType::Mekanisme),
+            ("utfør", TokenType::Utfør),
+            ("pluss", TokenType::Pluss),
+            ("minus", TokenType::Minus),
+            ("ganger", TokenType::Ganger),
+            ("delt", TokenType::Delt),
+            ("på", TokenType::På),
         ]
         .iter()
         .cloned()

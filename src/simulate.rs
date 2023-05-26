@@ -10,15 +10,31 @@ use crate::{
 fn evaluate(ast: &Box<Node>, state: &HashMap<String, i64>) -> i64 {
     match ast.node_type {
         NodeType::Expression => {
-            let token = &ast.token.as_ref().unwrap();
-            match token.token_type() {
-                crate::lexer::TokenType::IntLiteral(value) => *value,
-                crate::lexer::TokenType::SymbolRef(symbol) => *state.get(&symbol.name).unwrap(),
-                _ => 0,
+            if let Some(token) = &ast.token {
+                match token.token_type() {
+                    crate::lexer::TokenType::IntLiteral(value) => return *value,
+                    crate::lexer::TokenType::SymbolRef(symbol) => {
+                        return state.get(&symbol.name).unwrap().clone();
+                    }
+                    _ => {}
+                }
+            }
+
+            if ast.children.len() == 2 {
+                let left = evaluate(&ast.children[0], state);
+                let right = evaluate(&ast.children[1], state);
+                return match ast.data.as_str() {
+                    "+" => left + right,
+                    "-" => left - right,
+                    "*" => left * right,
+                    "/" => left / right,
+                    _ => 0,
+                };
             }
         }
-        _ => 0,
+        _ => return 0,
     }
+    return 0;
 }
 
 fn simulate_statement(
@@ -33,6 +49,23 @@ fn simulate_statement(
                 simulate_statement(child, symbol_table, string_list, state);
             }
         }
+        NodeType::FunctionCall => {
+            let identifier = &statement.children[0];
+            match identifier.node_type {
+                NodeType::Expression => {
+                    let token = &identifier.token.as_ref().unwrap();
+                    match token.token_type() {
+                        crate::lexer::TokenType::SymbolRef(symbol) => {
+                            let symbol = symbol_table.get(&symbol.name);
+                            let node = symbol.node.as_ref().unwrap();
+                            simulate_statement(node, symbol_table, string_list, state);
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
+        }
         NodeType::PrintStatement => {
             let expression = &statement.children[0];
             match expression.node_type {
@@ -40,21 +73,13 @@ fn simulate_statement(
                     let token = &expression.token.as_ref().unwrap();
                     match token.token_type() {
                         crate::lexer::TokenType::StringListIndex(index) => {
-                            let string = string_list.get(*index);
-                            println!("{}", string);
-                        }
-                        crate::lexer::TokenType::IntLiteral(value) => {
+                            let value = string_list.get(*index);
                             println!("{}", value);
                         }
-                        crate::lexer::TokenType::SymbolRef(symbol) => {
-                            let value = state.get(&symbol.name).unwrap();
+                        _ => {
+                            let value = evaluate(expression, &state);
                             println!("{}", value);
                         }
-                        crate::lexer::TokenType::Identifier(name) => {
-                            let value = state.get(name).unwrap();
-                            println!("{}", value);
-                        }
-                        _ => {}
                     }
                 }
                 _ => {}
@@ -63,16 +88,10 @@ fn simulate_statement(
         NodeType::AssignmentStatement => {
             let identifier = &statement.children[0];
             let expression = &statement.children[1];
-            match identifier.node_type {
-                NodeType::Expression => {
-                    let token = &identifier.token.as_ref().unwrap();
-                    match token.token_type() {
-                        crate::lexer::TokenType::SymbolRef(symbol) => {
-                            let value = evaluate(expression, &state);
-                            state.insert(symbol.name.clone(), value);
-                        }
-                        _ => {}
-                    }
+            match identifier.token.as_ref().unwrap().token_type() {
+                crate::lexer::TokenType::SymbolRef(symbol) => {
+                    let value = evaluate(expression, &state);
+                    state.insert(symbol.name.clone(), value);
                 }
                 _ => {}
             }

@@ -17,9 +17,12 @@ pub enum NodeType {
     IfStatement,
     Condition,
     FunctionDefinition,
+    FunctionCall,
+    Term,
+    Factor,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Node {
     pub token: Option<Token>,
     pub children: Vec<Box<Node>>,
@@ -68,9 +71,9 @@ fn simplify_tree_aux(ast: &mut Box<Node>) {
     let mut new_children = Vec::new();
     for child in &mut ast.children {
         simplify_tree_aux(child);
-        new_children.push(child.clone());
+        new_children.push(child);
     }
-    ast.children = new_children;
+    ast.children = new_children.into_iter().map(|x| x.clone()).collect();
 
     match ast.node_type {
         NodeType::Program => {
@@ -86,9 +89,7 @@ fn simplify_tree_aux(ast: &mut Box<Node>) {
                 if ast.children[1].node_type == NodeType::StatementList {
                     let mut new_children = Vec::new();
                     new_children.push(ast.children[0].clone());
-                    for child in &mut ast.children[1].children {
-                        new_children.push(child.clone());
-                    }
+                    new_children.append(&mut ast.children[1].children);
                     ast.children = new_children;
                 }
             }
@@ -108,6 +109,17 @@ fn simplify_tree_aux(ast: &mut Box<Node>) {
         NodeType::IfStatement => {}
         NodeType::Condition => {}
         NodeType::FunctionDefinition => {}
+        NodeType::FunctionCall => {}
+        NodeType::Term => {
+            if ast.children.len() == 1 {
+                *ast = ast.children.pop().unwrap();
+            }
+        }
+        NodeType::Factor => {
+            if ast.children.len() == 1 {
+                *ast = ast.children.pop().unwrap();
+            }
+        }
     }
 }
 
@@ -138,12 +150,15 @@ pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
         if let Some(token) = &ast.children[0].token {
             match token.token_type() {
                 crate::lexer::TokenType::Identifier(name) => {
-                    let symbol = symbol_table.add(name, crate::symbol::SymbolKind::Var);
+                    let symbol = symbol_table.add(name, crate::symbol::SymbolKind::Variable);
                     ast.children[0].token = Some(Token::new(
                         crate::lexer::TokenType::SymbolRef(symbol),
                         token.line(),
                         token.column(),
                     ));
+                    for child in &mut ast.children[1].children {
+                        find_symbols(child, symbol_table);
+                    }
                     return;
                 }
                 _ => {}
@@ -154,7 +169,26 @@ pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
         if let Some(token) = &ast.children[0].token {
             match token.token_type() {
                 crate::lexer::TokenType::Identifier(name) => {
-                    let symbol = symbol_table.add(name, crate::symbol::SymbolKind::Func);
+                    let symbol = symbol_table.add(name, crate::symbol::SymbolKind::Function);
+                    ast.children[0].token = Some(Token::new(
+                        crate::lexer::TokenType::SymbolRef(symbol),
+                        token.line(),
+                        token.column(),
+                    ));
+                    for child in &mut ast.children[1].children {
+                        find_symbols(child, symbol_table);
+                    }
+                    return;
+                }
+                _ => {}
+            }
+        }
+    }
+    if let NodeType::FunctionCall = ast.node_type {
+        if let Some(token) = &ast.children[0].token {
+            match token.token_type() {
+                crate::lexer::TokenType::Identifier(name) => {
+                    let symbol = symbol_table.get(name);
                     ast.children[0].token = Some(Token::new(
                         crate::lexer::TokenType::SymbolRef(symbol),
                         token.line(),
@@ -188,6 +222,29 @@ pub fn find_symbols(ast: &mut Box<Node>, symbol_table: &mut SymbolTable) {
     }
 }
 
+pub fn resolve_symbols(symbol_table: &mut SymbolTable, ast: &Box<Node>) {
+    match ast.node_type {
+        NodeType::FunctionDefinition => {
+            let identifier = ast.children[0].clone();
+            let body = ast.children[1].clone();
+            match identifier.token {
+                Some(token) => match &token.token_type() {
+                    crate::lexer::TokenType::SymbolRef(symbol) => {
+                        symbol_table.set_node(&symbol.name, body);
+                    }
+                    _ => {}
+                },
+                None => {}
+            }
+        }
+        _ => {
+            for child in &ast.children {
+                resolve_symbols(symbol_table, child);
+            }
+        }
+    }
+}
+
 struct AstWriterState {
     file: File,
     id: usize,
@@ -206,6 +263,7 @@ fn ast_to_graphwiz_aux(state: &mut AstWriterState, ast: &Node) -> Result<(), Box
     let id = state.id;
     state.id += 1;
     let label = format!("{:?}", ast.node_type);
+    let label = label.split("(").collect::<Vec<&str>>()[0];
     state
         .file
         .write_all(format!("    {} [label=\"{}\"];\n", id, label).as_bytes())?;

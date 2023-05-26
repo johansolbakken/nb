@@ -7,12 +7,18 @@ use crate::{
 
 // program -> statement_list
 // statement_list -> statement . statement_list | ε
-// statement -> print_statement statement_tail | assignment_statement statement_tail | if_statement statement_tail | function_definition
+// statement -> print_statement statement_tail | assignment_statement statement_tail | if_statement statement_tail | function_definition | function_call
 // statement_tail -> , statement | ε
 // print_statement -> si expression
 // if_statement -> dersom condition gjør følgende: statement
 // assignment_statement -> la identifier være expression
-// expression -> string_literal | identifier | int_literal | float_literal
+// expression -> term expression_tail
+// expression_tail -> + term expression_tail | - term expression_tail | ε
+// term -> factor term_tail
+// term_tail -> * factor term_tail | / factor term_tail | ε
+// factor -> ( expression ) | identifier | int_literal | float_literal | function_call | - factor | string_literal
+// function_definition -> mekanisme identifier gjør følgende : statement
+// function_call -> utfør identifier !
 
 pub struct Parser {
     lexer: Lexer,
@@ -91,6 +97,9 @@ impl Parser {
             }
             crate::lexer::TokenType::Mekanisme => {
                 node.children.push(self.function_definition());
+            }
+            crate::lexer::TokenType::Utfør => {
+                node.children.push(self.function_call());
             }
             _ => panic!(
                 "Expected statement but found {:?} on line {}",
@@ -181,13 +190,38 @@ impl Parser {
 
     fn expression(&mut self) -> Box<Node> {
         let mut node = Box::new(Node::new(NodeType::Expression));
+        node.children.push(self.term());
+        if *self.token.token_type() == crate::lexer::TokenType::Pluss {
+            self.advance();
+            node.data = "+".to_string();
+            node.children.push(self.expression());
+        } else if *self.token.token_type() == crate::lexer::TokenType::Minus {
+            self.advance();
+            node.data = "-".to_string();
+            node.children.push(self.expression());
+        }
+        node
+    }
+
+    fn term(&mut self) -> Box<Node> {
+        let mut node = Box::new(Node::new(NodeType::Term));
+        node.children.push(self.factor());
+        if *self.token.token_type() == crate::lexer::TokenType::Ganger {
+            self.advance();
+            node.data = "*".to_string();
+            node.children.push(self.term());
+        } else if *self.token.token_type() == crate::lexer::TokenType::Delt {
+            self.advance();
+            self.expect(crate::lexer::TokenType::På);
+            node.data = "/".to_string();
+            node.children.push(self.term());
+        }
+        node
+    }
+
+    fn factor(&mut self) -> Box<Node> {
+        let mut node = Box::new(Node::new(NodeType::Factor));
         match self.token.token_type() {
-            crate::lexer::TokenType::StringListIndex(_) => {
-                node.children.push(self.string_literal());
-            }
-            crate::lexer::TokenType::Identifier(_) => {
-                node.children.push(self.identifier());
-            }
             crate::lexer::TokenType::IntLiteral(_) => {
                 node.children.push(self.int_literal());
             }
@@ -197,10 +231,13 @@ impl Parser {
             crate::lexer::TokenType::StringLiteral(_) => {
                 node.children.push(self.string_literal());
             }
-            _ => panic!(
-                "Expected expression but found {:?}",
-                self.token.token_type()
-            ),
+            crate::lexer::TokenType::Identifier(_) => {
+                node.children.push(self.identifier());
+            }
+            crate::lexer::TokenType::Utfør => {
+                node.children.push(self.function_call());
+            }
+            _ => panic!("Expected factor but found {:?}", self.token.token_type()),
         }
         node
     }
@@ -217,6 +254,14 @@ impl Parser {
         self.expect(crate::lexer::TokenType::Colon);
         node.children.push(self.statement());
         self.expect(crate::lexer::TokenType::Dot);
+        node
+    }
+
+    fn function_call(&mut self) -> Box<Node> {
+        let mut node = Box::new(Node::new(NodeType::FunctionCall));
+        self.expect(crate::lexer::TokenType::Utfør);
+        node.children.push(self.identifier());
+        self.expect(crate::lexer::TokenType::Exclamation);
         node
     }
 

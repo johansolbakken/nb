@@ -1,6 +1,7 @@
 use tracing::info;
 
 mod ast;
+mod cfg;
 mod lexer;
 mod parser;
 mod simulate;
@@ -8,9 +9,12 @@ mod symbol;
 mod utils;
 
 fn main() {
-    // tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt::init();
 
-    let file = "examples/si.nb";
+    // take file from arguments
+    let args: Vec<String> = std::env::args().collect();
+    let file = &args[1];
+
     info!("Reading source: {}", file);
     let source = utils::read_file(file).expect("Failed to read file");
 
@@ -22,20 +26,31 @@ fn main() {
     info!("Semantic analysis");
     ast::simplify_tree(&mut tree);
 
-    info!("Building symbol table");
+    info!("Building string list");
     let mut string_list = symbol::StringList::new();
     ast::fill_string_list(&mut tree, &mut string_list);
+
+    info!("Building symbol table");
     let mut symbol_table = symbol::SymbolTable::new();
     ast::find_symbols(&mut tree, &mut symbol_table);
 
+    info!("Resolving symbols");
+    ast::resolve_symbols(&mut symbol_table, &tree);
+
+    info!("Building control flow graph");
+    let cfg = cfg::CFG::new(&tree);
+
+    info!("Writing files");
     tree.write_to_file("ast.png")
         .expect("Failed to write ast to file");
-    string_list
-        .write_to_file("string_list.txt")
-        .expect("Failed to write string list to file");
     symbol_table
         .write_to_file("symbol_table.txt")
         .expect("Failed to write symbol table to file");
+    string_list
+        .write_to_file("string_list.txt")
+        .expect("Failed to write string list to file");
+    cfg.write_to_graphwiz("cfg.png")
+        .expect("Failed to write cfg to file");
 
     info!("Simulating");
     simulate::simulate(&tree, &symbol_table, &string_list);
