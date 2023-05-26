@@ -1,10 +1,5 @@
-la arbeider være 45.
+la a være 0.
 
-dersom arbeider er lik 45 gjør følgende: 
-    si "Arbeider",
-    la arbeider være 43.
-ellers gjør følgende:
-    si "Johan".
+dersom a er lik 1 gjør følgende:
+    si "A er 1".
 .
-
-si arbeider.

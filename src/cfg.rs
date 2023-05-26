@@ -1,5 +1,3 @@
-// Control Flow Graph
-
 use std::{error::Error, fs::File, io::Write};
 
 use tracing::info;
@@ -463,13 +461,14 @@ impl CFG {
         self.next_temporary_variable_id - 1
     }
 
-    pub fn get_successor(&self, id: usize) -> usize {
+    pub fn get_successors(&self, id: usize) -> Vec<usize> {
+        let mut successors = Vec::new();
         for block in &self.blocks {
             if block.predecessors.contains(&id) {
-                return block.id;
+                successors.push(block.id);
             }
         }
-        panic!("No successor found for block {}", id);
+        successors
     }
 
     pub fn entry_block(&self) -> usize {
