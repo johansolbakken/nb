@@ -1,9 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, string};
 
 use tracing::info;
 
 use crate::{
     ast::{Node, NodeType},
+    cfg::{BasicBlock, Instruction, Opcode, Operand, CFG},
     symbol::{StringList, SymbolTable},
 };
 
@@ -183,5 +184,45 @@ pub fn simulate(ast: &Box<Node>, symbol_table: &SymbolTable, string_list: &Strin
     let mut state: HashMap<String, i64> = HashMap::new();
     for statement in &ast.children {
         simulate_statement(statement, symbol_table, string_list, &mut state);
+    }
+}
+
+fn simulate_instruction(
+    instruction: &Instruction,
+    symbol_table: &SymbolTable,
+    string_list: &StringList,
+) {
+    match instruction.opcode {
+        Opcode::Print => match instruction.operands[0] {
+            Operand::String(string_index) => {
+                let value = string_list.get(string_index);
+                println!("{}", value);
+            }
+            _ => {}
+        },
+        _ => {}
+    }
+}
+
+fn simulate_basic_block(
+    basic_block: &BasicBlock,
+    symbol_table: &SymbolTable,
+    string_list: &StringList,
+) {
+    for instruction in basic_block.get_instructions() {
+        simulate_instruction(instruction, symbol_table, string_list);
+    }
+}
+
+pub fn simulate_cfg(cfg: &CFG, symbol_table: &SymbolTable, string_list: &StringList) {
+    let mut state: HashMap<String, i64> = HashMap::new();
+    let mut id = cfg.entry_block();
+    loop {
+        let block = cfg.get_block(id);
+        simulate_basic_block(block, symbol_table, string_list);
+        id = cfg.get_successor(id);
+        if id == cfg.exit_block() {
+            break;
+        }
     }
 }

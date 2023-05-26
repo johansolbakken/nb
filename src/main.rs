@@ -1,5 +1,7 @@
 use tracing::info;
 
+use crate::simulate::simulate_cfg;
+
 mod ast;
 mod cfg;
 mod lexer;
@@ -54,7 +56,7 @@ fn main() {
         .expect("Failed to write cfg to file");
 
     info!("Simulating");
-    simulate::simulate(&tree, &symbol_table, &string_list);
+    simulate_cfg(&cfg, &symbol_table, &string_list);
 
     info!("Done!");
 }

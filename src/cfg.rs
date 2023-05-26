@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Copy)]
-enum Opcode {
+pub enum Opcode {
     Add,
     Sub,
     Mul,
@@ -31,28 +31,39 @@ enum Opcode {
 }
 
 #[derive(Debug, Clone, PartialEq, Copy)]
-enum Operand {
+pub enum Operand {
     Immediate(i64),
     Label(usize),
     String(usize),
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct Instruction {
-    id: usize,
-    opcode: Opcode,
-    operands: Vec<Operand>,
+pub struct Instruction {
+    pub id: usize,
+    pub opcode: Opcode,
+    pub operands: Vec<Operand>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct BasicBlock {
+pub struct BasicBlock {
     id: usize,
     instructions: Vec<Instruction>,
     predecessors: Vec<usize>,
+    successors: Vec<usize>,
+}
+
+impl BasicBlock {
+    pub fn get_instructions(&self) -> &Vec<Instruction> {
+        &self.instructions
+    }
+
+    pub fn get_successors(&self) -> &Vec<usize> {
+        &self.successors
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct CFG {
+pub struct CFG {
     blocks: Vec<BasicBlock>,
     entry: usize,
     exit: usize,
@@ -94,6 +105,7 @@ impl CFG {
                                 id,
                                 instructions: vec![instruction],
                                 predecessors: vec![parent_id],
+                                successors: vec![],
                             };
                             self.blocks.push(block);
                             seq_id = id;
@@ -118,6 +130,7 @@ impl CFG {
             id,
             instructions: Vec::new(),
             predecessors: Vec::new(),
+            successors: vec![],
         };
         self.blocks.push(block);
     }
@@ -130,14 +143,47 @@ impl CFG {
             id,
             instructions: Vec::new(),
             predecessors: vec![predecessor],
+            successors: Vec::new(),
         };
         self.blocks.push(block);
+    }
+
+    fn get_predecessors(&self, id: usize) -> Vec<usize> {
+        let mut predecessors = Vec::new();
+        for block in &self.blocks {
+            let block_copy = block.clone();
+            if block_copy.successors.contains(&id) {
+                predecessors.push(block_copy.id);
+            }
+        }
+        predecessors
     }
 
     fn next_id(&mut self) -> usize {
         let id = self.next_id;
         self.next_id += 1;
         id
+    }
+
+    pub fn get_successor(&self, id: usize) -> usize {
+        for block in &self.blocks {
+            if block.predecessors.contains(&id) {
+                return block.id;
+            }
+        }
+        panic!("No successor found for block {}", id);
+    }
+
+    pub fn entry_block(&self) -> usize {
+        self.entry
+    }
+
+    pub fn exit_block(&self) -> usize {
+        self.exit
+    }
+
+    pub fn get_block(&self, id: usize) -> &BasicBlock {
+        &self.blocks[id]
     }
 
     pub fn write_to_graphwiz(&self, filename: &str) -> Result<(), Box<dyn Error>> {
