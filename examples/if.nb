@@ -3,14 +3,8 @@ la arbeider være 45.
 dersom arbeider er lik 45 gjør følgende: 
     si "Arbeider",
     la arbeider være 43.
-ellers gjør følgende: 
-    si "ikke arbeider",
-    si "hei".
+ellers gjør følgende:
+    si "Johan".
 .
 
-dersom arbeider er mindre enn 45 gjør følgende:
-    si "Arbeider endret seg!",
-    dersom arbeider er lik 43 gjør følgende:
-        si "Arbeider ble faktisk 43".
-    .
-.
+si arbeider.
