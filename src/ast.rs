@@ -40,21 +40,6 @@ impl Node {
         }
     }
 
-    pub fn print(&self) {
-        self.print_aux(0);
-    }
-
-    fn print_aux(&self, indent: usize) {
-        let indent_str = " ".repeat(indent);
-        println!("{}{:?}", indent_str, self.node_type);
-        if let Some(token) = &self.token {
-            println!("{}{:?}", indent_str, token);
-        }
-        for child in &self.children {
-            child.print_aux(indent + 2);
-        }
-    }
-
     pub fn write_to_file(&self, filename: &str) -> Result<(), Box<dyn Error>> {
         ast_to_graphwiz("ast.dot", self)?;
         utils::graphwiz_to_png("ast.dot", filename).expect("Failed to convert dot file to png");
